@@ -461,8 +461,11 @@ class IntegralController(nn.Module):
         error_bounds = torch.add(self.atol, torch.abs(y0), alpha=self.rtol)
         inv_scale = torch.reciprocal(error_bounds)
 
-        d0 = norm(y0 * inv_scale)
-        d1 = norm(f0 * inv_scale)
+        # For very small d1 near 0, the dt0 calculation below can produce nan gradients
+        # if an eps is not added
+        eps = 1e-6
+        d0 = norm(y0 * inv_scale) + eps
+        d1 = norm(f0 * inv_scale) + eps
 
         small_number = torch.tensor(1e-6, dtype=d0.dtype, device=d0.device)
         dt0 = torch.where((d0 < 1e-5) | (d1 < 1e-5), small_number, 0.01 * d0 / d1)
